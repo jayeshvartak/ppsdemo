@@ -14,6 +14,12 @@
     "categories": {
       "auth": {
         "ppsdemoc313810c": {}
+      },
+      "function": {
+        "S3Trigger458b51f3": {
+          "deploymentBucketName": "amplify-amplify5ec0c9ecbf944-staging-53119-deployment",
+          "s3Key": "amplify-builds/S3Trigger458b51f3-31614872494e4b627759-build.zip"
+        }
       }
     }
   }
