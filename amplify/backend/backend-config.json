@@ -1,0 +1,10 @@
+{
+  "auth": {
+    "ppsdemoc313810c": {
+      "service": "Cognito",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [],
+      "customAuth": false
+    }
+  }
+}
