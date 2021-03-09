@@ -1,0 +1,10 @@
+type Cheque @model {
+  id: ID!
+  payee: String
+  amountWord: String
+  amountNumber: String
+  chequeDate: String
+  chequeNumber: String
+  image: String
+  status: String
+}
