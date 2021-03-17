@@ -3,7 +3,8 @@ import './App.css';
 import { API, Storage, graphqlOperation } from 'aws-amplify';
 import { withAuthenticator, AmplifySignOut } from '@aws-amplify/ui-react';
 import { listCheques } from './graphql/queries';
-import { createCheque as createChequeMutation, updateCheque as updateChequeMutation, deleteCheque as deleteChequeMutation } from './graphql/mutations';
+//import { createCheque as createChequeMutation, updateCheque as updateChequeMutation, deleteCheque as deleteChequeMutation } from './graphql/mutations';
+import { updateCheque as updateChequeMutation, deleteCheque as deleteChequeMutation } from './graphql/mutations';
 import { onCreateCheque, onUpdateCheque } from './graphql/subscriptions';
 
 const initialFormState = { payee: '', image: '', status: '0' }
@@ -14,8 +15,17 @@ function App() {
 
   useEffect(() => {
     fetchCheques();
+    const subscriptionOnCreate = API.graphql(graphqlOperation(onCreateCheque)).subscribe({
+      next: apiData => {
+        console.log("onCreateCheque::");
+        console.log(apiData);
+        fetchCheques();
+//        setCheques([ ...cheques, apiData.value.data.onCreateCheque ]);
+      }
+    });
 
-/*    
+//    return () => subscriptionOnCreate.unsubscribe(); 
+
     const subscriptionOnUpdate = API.graphql(graphqlOperation(onUpdateCheque)).subscribe({
       next: apiData => {
         console.log(apiData);
@@ -23,15 +33,21 @@ function App() {
       }
     });
 
-    return () => subscriptionOnUpdate.unsubscribe(); 
-*/
+    return () => {
+      subscriptionOnCreate.unsubscribe(); 
+      subscriptionOnUpdate.unsubscribe(); 
+    }
   }, []);
 
+ 
   async function onChange(e) {
     if (!e.target.files[0]) return
     const file = e.target.files[0];
-    setFormData({ ...formData, image: file.name });
-    await Storage.put(file.name, file);
+//    setFormData({ ...formData, image: file.name });
+//    await Storage.put(file.name, file);
+    var filename = "image-"+ Date.now();
+    setFormData({ ...formData, image: filename });
+    await Storage.put(filename, file);
     fetchCheques();
   }
 
@@ -45,10 +61,11 @@ function App() {
       }
       return cheque;
     }))
-       
+    console.log("fetchCheques::");   
+    console.log(apiData);   
     setCheques(apiData.data.listCheques.items);
   }
-
+/*
   async function createCheque() {
 //    if (!formData.payee || !formData.amountWord) return;
     await API.graphql({ query: createChequeMutation, variables: { input: formData } });
@@ -68,12 +85,12 @@ function App() {
           const image = await Storage.get(formData.image);
           formData.image = image;
         }
-        setCheques([ ...cheques, formData ]);
+//        setCheques([ ...cheques, formData ]);
+//        setCheques(cheques);
         setFormData(initialFormState);
       }
     
   async function recreateCheque({ id }) {
-    const newChequesArray = cheques.filter(cheque => cheque.id !== id);
     const checkToBeDeleted = cheques.filter(cheque => cheque.id === id);
 //    setCheques(newChequesArray);
 //    formData.status = 2;
@@ -88,10 +105,10 @@ function App() {
     await API.graphql({ query: createChequeMutation, variables: { input: checkToBeDeleted[0] } });
     await API.graphql({ query: deleteChequeMutation, variables: { input: { id } }});
   }
-
+*/
   async function confirmCheque({ id }) {
     console.log(id);
-    const newChequesArray = cheques.filter(cheque => cheque.id !== id);
+//    const newChequesArray = cheques.filter(cheque => cheque.id !== id);
     const checkToBeDeleted = cheques.filter(cheque => cheque.id === id);
 //    setCheques(newChequesArray);
 //    formData.status = 2;
@@ -114,12 +131,14 @@ function App() {
   return (
     <div className="App">
       <h1>Positive Pay System App</h1>
+      <label>Upload scan/photo of Cheque: </label>
       <input
+              id="check_file"
               type="file"
               onChange={onChange}
             />
-            <br></br>
-      <button onClick={uploadCheque}>Upload scan/photo of Cheque</button>
+      <br></br>
+      <br></br>
       <hr></hr>
       <div style={{marginBottom: 30}}>
         {
@@ -129,30 +148,35 @@ function App() {
                 cheque.image && <img src={cheque.image} alt="" style={{width: 600}} />
               }
             <br></br>
+            <label>Payee: </label>
             <input
               onChange={e => setFormData({ ...formData, 'payee': e.target.value})}
               placeholder="Payee"
               value={cheque.payee}
             />
             <br></br>
+            <label>Amount in Word: </label>
             <input
               onChange={e => setFormData({ ...formData, 'amountWord': e.target.value})}
               placeholder="Amount in Word"
               value={cheque.amountWord}
             />
             <br></br>
+            <label>Amount in Number: </label>
             <input
               onChange={e => setFormData({ ...formData, 'amountNumber': e.target.value})}
               placeholder="Amount in Number"
               value={cheque.amountNumber}
             />
             <br></br>
+            <label>Cheque Date: </label>
             <input
               onChange={e => setFormData({ ...formData, 'chequeDate': e.target.value})}
               placeholder="Cheque Date"
               value={cheque.chequeDate}
             />
             <br></br>
+            <label>Cheque Number: </label>
             <input
               onChange={e => setFormData({ ...formData, 'chequeNumber': e.target.value})}
               placeholder="Cheque Number"
@@ -166,8 +190,9 @@ function App() {
         }
       </div>
       <hr></hr>
+      <h1>Issued Cheques</h1>
       <div>
-      <table border="1" align="center">
+      <table border="1" align="center" cellSpacing="0">
         <thead>
           <tr>
             <th>Payee</th>
@@ -175,29 +200,34 @@ function App() {
             <th>Amount in Number</th>
             <th>Cheque Date</th>
             <th>Cheque Number</th>
+            {/*
             <th>Status</th>
             <th>Delete</th>
+            */}
           </tr>
         </thead>
         <tbody>
         {
-          cheques.filter(cheque => cheque.status !== "").map(cheque => (
+          cheques.filter(cheque => cheque.status === "2").map(cheque => (
             
             <tr><td>{cheque.payee}</td>
               <td>{cheque.amountWord}</td>
               <td>{cheque.amountNumber}</td>
               <td>{cheque.chequeDate}</td>
               <td>{cheque.chequeNumber}</td>
+              {/*
               <td>{cheque.status}</td>
               <td>
                 <button onClick={() => deleteCheque(cheque)}>Delete cheque</button>
               </td>
+              */}
             </tr>
 
           ))
         }
         </tbody>
       </table> 
+      <br></br>
       </div>
       <AmplifySignOut />
     </div>
